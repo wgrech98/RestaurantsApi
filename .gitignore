@@ -1,3 +1,5 @@
+appsettings.json
+
 # globs
 Makefile.in
 *.userprefs
@@ -10,7 +12,6 @@ autom4te.cache/
 *.tar.gz
 tarballs/
 test-results/
-**/appsettings.json
 
 # Mac bundle stuff
 *.dmg
