@@ -28,29 +28,56 @@ namespace RestaurantAPI.Controllers
           {
               return NotFound();
           }
-            return await _context.OrderMasters.ToListAsync();
+            return await _context.OrderMasters
+                .Include(x => x.Customer)
+                .ToListAsync();
         }
 
         // GET: api/Order/5
         [HttpGet("{id}")]
         public async Task<ActionResult<OrderMaster>> GetOrderMaster(long id)
         {
-          if (_context.OrderMasters is null)
-          {
-              return NotFound();
-          }
-            var orderMaster = await _context.OrderMasters.FindAsync(id);
+            //get fooditem from order details
+            var orderDetails = await (from master in _context.Set<OrderMaster>()
+                                      join detail in _context.Set<OrderDetail>()
+                                      on master.OrderMasterId equals detail.OrderMasterId
+                                      join foodItem in _context.Set<FoodItem>()
+                                      on detail.FoodItemId equals foodItem.FoodItemId
+                                      where master.OrderMasterId == id
+
+                                      select new
+                                      {
+                                          master.OrderMasterId,
+                                          detail.OrderDetailId,
+                                          detail.FoodItemId,
+                                          detail.Quantity,
+                                          detail.FoodItemPrice,
+                                          foodItem.FoodItemName
+                                      }).ToListAsync();
+
+            var orderMaster = await (from a in _context.Set<OrderMaster>()
+                                     where a.OrderMasterId == id
+
+                                     select new
+                                     {
+                                         a.OrderMasterId,
+                                         a.OrderNumber,
+                                         a.CustomerId,
+                                         a.PMethod,
+                                         a.GTotal,
+                                         deletedOrderItemIds = "",
+                                         orderDetails = orderDetails
+                                     }).FirstOrDefaultAsync();
 
             if (orderMaster is null)
             {
                 return NotFound();
             }
 
-            return orderMaster;
+            return Ok(orderMaster);
         }
 
         // PUT: api/Order/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutOrderMaster(long id, OrderMaster orderMaster)
         {
@@ -61,10 +88,31 @@ namespace RestaurantAPI.Controllers
 
             _context.Entry(orderMaster).State = EntityState.Modified;
 
+            //existing food items & newly added food items
+            foreach(OrderDetail item in orderMaster.OrderDetails)
+            {
+                if (item.OrderDetailId == 0)
+                {
+                    _context.OrderDetails.Add(item);
+                }
+                else
+                {
+                    _context.Entry(item).State = EntityState.Modified;
+                }
+            }
+                
+            //deleted food items
+            foreach (var i in orderMaster.DeletedOrderItemIds.Split(',').Where(x => x != ""))
+            {
+                OrderDetail y = _context.OrderDetails.Find(Convert.ToInt64(i));
+                _context.OrderDetails.Remove(y);
+            }
+
             try
             {
                 await _context.SaveChangesAsync();
             }
+            //only one user at a time can update
             catch (DbUpdateConcurrencyException)
             {
                 if (!OrderMasterExists(id))
@@ -85,10 +133,6 @@ namespace RestaurantAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<OrderMaster>> PostOrderMaster(OrderMaster orderMaster)
         {
-          if (_context.OrderMasters is null)
-          {
-              return Problem("Entity set 'RestaurantDbContext.OrderMasters'  is null.");
-          }
             _context.OrderMasters.Add(orderMaster);
             await _context.SaveChangesAsync();
 

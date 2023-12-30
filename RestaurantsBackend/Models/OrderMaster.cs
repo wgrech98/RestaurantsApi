@@ -24,6 +24,10 @@ namespace RestaurantAPI.Models
         public decimal GTotal { get; set; }
 
         public List<OrderDetail> OrderDetails { get; set; }
+
+        //This property is only for client side, hence mark as NotMapped to not create a column in DB
+        [NotMapped]
+        public string DeletedOrderItemIds { get; set; }
     }
 }
 

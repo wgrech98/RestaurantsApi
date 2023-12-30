@@ -1,11 +1,9 @@
-﻿
-using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.ComponentModel.DataAnnotations.Schema;
 namespace RestaurantAPI.Models
 {
-	public class FoodItem
+    public class FoodItem
 	{
 		[Key]
 		public int FoodItemId { get; set; }

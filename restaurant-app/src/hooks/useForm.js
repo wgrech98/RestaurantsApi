@@ -5,7 +5,7 @@ export function useForm(getFreshModelObject) {
   const [errors, setErrors] = useState({});
 
   const handleInputChange = (e) => {
-    const [name, value] = e.target; // name and value of the input field
+    const { name, value } = e.target;
     setValues({
       ...values,
       [name]: value,
